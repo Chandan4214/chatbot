@@ -8,6 +8,24 @@ const generateResponse = require('./src/service/ai.service');
 const httpServer = createServer(app);
 const io = new Server(httpServer, { /* options */ });
 
+
+
+
+const chatHistory=[
+  {
+    role: "user",
+    parts:[{text:"Hello!"}]
+  },
+  {
+    role:"model",
+     parts: [
+        {
+          text: "Hello! How can I assist you today?",
+        },
+      ],
+  }
+];
+
 io.on("connection", (socket) => {
   // ...
   console.log('a user connected');
@@ -20,19 +38,20 @@ io.on("connection", (socket) => {
     console.log("user disconnected");
   });
 
-socket.on("ai-message", async (data) => {
+socket.on("message", async (data) => {
   try {
-    // If frontend sends JSON string, parse it
-    const parsed = typeof data === "string" ? JSON.parse(data) : data;
-    const prompt = parsed.prompt;
+    
+    console.log("AI message received:", data);
 
-    console.log("AI message received:", prompt);
-
-    if (!prompt) {
+    if (!data) {
       return socket.emit("ai-message-response", { response: "❌ No prompt provided" });
     }
+    chatHistory.push({
+      role: "user",
+      parts: [{ text: data }],
+    });
 
-    const response = await generateResponse(prompt);
+    const response = await generateResponse(chatHistory);
     socket.emit("ai-message-response", { response });
 
   } catch (err) {
